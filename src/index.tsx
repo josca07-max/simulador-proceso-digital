@@ -491,7 +491,9 @@ app.get('/', (c) => {
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <div class="bg-gray-50 rounded-lg p-4">
                                 <h3 class="text-lg font-medium mb-4">Tendencia OEE (7 días)</h3>
-                                <canvas id="oee-trend-chart"></canvas>
+                                <div class="chart-container">
+                                    <canvas id="oee-trend-chart"></canvas>
+                                </div>
                             </div>
                             <div class="bg-gray-50 rounded-lg p-4">
                                 <h3 class="text-lg font-medium mb-4">Mediciones Actuales</h3>
