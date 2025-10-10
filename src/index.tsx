@@ -603,4 +603,228 @@ app.get('/', (c) => {
   `)
 })
 
+// ===============================================
+// PÁGINA DE DIAGNÓSTICO APIs - SOLUCIÓN INNOVADORA
+// ===============================================
+app.get('/diagnostico', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Diagnóstico APIs - FLEXIA FLEXOMED</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+          .api-test-result { transition: all 0.3s ease; }
+          .success { background-color: #dcfce7; border-color: #16a34a; }
+          .error { background-color: #fef2f2; border-color: #dc2626; }
+          .loading { background-color: #fef3c7; border-color: #d97706; }
+        </style>
+    </head>
+    <body class="bg-gray-100">
+        <div class="container mx-auto px-4 py-8">
+            <!-- Header FLEXIA FLEXOMED -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-6 mb-8">
+                <h1 class="text-3xl font-bold mb-2">
+                    <i class="fas fa-stethoscope mr-3"></i>
+                    Diagnóstico APIs FLEXIA
+                </h1>
+                <p class="text-blue-100">FLEXOMED - Simulador de Proceso Digital</p>
+                <p class="text-blue-200 text-sm">Interfaz Visual para Testing de APIs desde Navegador</p>
+            </div>
+
+            <!-- Resumen de Performance -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-xl font-semibold mb-4">
+                    <i class="fas fa-tachometer-alt mr-2 text-green-600"></i>
+                    Resumen de Performance
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-600" id="total-apis">12</div>
+                        <div class="text-gray-600">APIs Totales</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-600" id="success-count">0</div>
+                        <div class="text-gray-600">Exitosas</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-red-600" id="error-count">0</div>
+                        <div class="text-gray-600">Fallos</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-600" id="avg-response">0ms</div>
+                        <div class="text-gray-600">Promedio</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de APIs para Testing -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold">
+                        <i class="fas fa-list-check mr-2 text-blue-600"></i>
+                        APIs del Sistema FLEXIA_FLEXOMED
+                    </h2>
+                    <button id="test-all-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                        <i class="fas fa-play mr-2"></i>
+                        Probar Todas las APIs
+                    </button>
+                </div>
+
+                <div class="space-y-4" id="api-list">
+                    <!-- Las APIs se cargarán dinámicamente aquí -->
+                </div>
+            </div>
+
+            <!-- Footer FLEXIA -->
+            <div class="bg-gray-800 text-white rounded-lg p-6">
+                <div class="text-center">
+                    <p class="text-gray-300">© 2025 FLEXIA Soluciones Industriales Avanzadas</p>
+                    <p class="text-gray-400">Cliente: FLEXOMED - Flexográfica del Mediterráneo S.A.</p>
+                    <p class="text-gray-400">Proyecto: SPD-2025-001 | Contacto: ia@flexia.com.sv</p>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Lista de APIs para probar
+            const apis = [
+                { name: 'Dashboard KPIs', endpoint: '/api/dashboard/kpis', method: 'GET', description: 'KPIs principales del sistema' },
+                { name: 'Six Sigma Cpk', endpoint: '/api/sixsigma/cpk', method: 'GET', description: 'Calculadora Cpk interactiva' },
+                { name: 'SMED Optimizer', endpoint: '/api/smed/current', method: 'GET', description: 'Optimización de tiempos setup' },
+                { name: '5S Audits', endpoint: '/api/5s/audits', method: 'GET', description: 'Auditorías digitales 5S' },
+                { name: 'OEE Analytics', endpoint: '/api/oee/current', method: 'GET', description: 'Análisis eficiencia OEE' },
+                { name: 'Lean Metrics', endpoint: '/api/lean/waste', method: 'GET', description: 'Métricas Lean Manufacturing' },
+                { name: 'Quality Control', endpoint: '/api/quality/metrics', method: 'GET', description: 'Control de calidad' },
+                { name: 'Production Batches', endpoint: '/api/production/batches', method: 'GET', description: 'Lotes de producción' },
+                { name: 'Equipment Status', endpoint: '/api/equipment/status', method: 'GET', description: 'Estado de equipos' },
+                { name: 'Workers Performance', endpoint: '/api/workers/performance', method: 'GET', description: 'Rendimiento personal' },
+                { name: 'Active Alerts', endpoint: '/api/alerts/active', method: 'GET', description: 'Alertas activas' },
+                { name: 'OEE Trend', endpoint: '/api/oee/trend', method: 'GET', description: 'Tendencias OEE' }
+            ];
+
+            // Renderizar lista de APIs
+            function renderApiList() {
+                const apiList = document.getElementById('api-list');
+                apiList.innerHTML = apis.map((api, index) => \`
+                    <div class="border rounded-lg p-4 api-test-result" id="api-\${index}">
+                        <div class="flex justify-between items-center">
+                            <div class="flex-1">
+                                <h3 class="font-semibold text-gray-800">\${api.name}</h3>
+                                <p class="text-sm text-gray-600">\${api.description}</p>
+                                <code class="text-xs bg-gray-100 px-2 py-1 rounded">\${api.method} \${api.endpoint}</code>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <span class="status-badge px-3 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700" id="status-\${index}">
+                                    Pendiente
+                                </span>
+                                <span class="response-time text-sm text-gray-500" id="time-\${index}">-</span>
+                                <button class="test-btn bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" onclick="testApi(\${index})">
+                                    <i class="fas fa-play mr-1"></i>
+                                    Probar
+                                </button>
+                            </div>
+                        </div>
+                        <div class="response-content hidden mt-3 p-3 bg-gray-50 rounded text-xs" id="response-\${index}">
+                            <!-- Response content will appear here -->
+                        </div>
+                    </div>
+                \`).join('');
+            }
+
+            // Probar una API individual
+            async function testApi(index) {
+                const api = apis[index];
+                const element = document.getElementById(\`api-\${index}\`);
+                const statusBadge = document.getElementById(\`status-\${index}\`);
+                const timeSpan = document.getElementById(\`time-\${index}\`);
+                const responseDiv = document.getElementById(\`response-\${index}\`);
+
+                // Estado de carga
+                element.className = 'border rounded-lg p-4 api-test-result loading';
+                statusBadge.textContent = 'Probando...';
+                statusBadge.className = 'status-badge px-3 py-1 rounded-full text-xs font-medium bg-yellow-200 text-yellow-700';
+
+                const startTime = performance.now();
+
+                try {
+                    const response = await fetch(api.endpoint);
+                    const endTime = performance.now();
+                    const responseTime = Math.round(endTime - startTime);
+                    
+                    timeSpan.textContent = \`\${responseTime}ms\`;
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        // Estado exitoso
+                        element.className = 'border rounded-lg p-4 api-test-result success';
+                        statusBadge.textContent = '✅ Exitosa';
+                        statusBadge.className = 'status-badge px-3 py-1 rounded-full text-xs font-medium bg-green-200 text-green-700';
+                        
+                        responseDiv.innerHTML = \`<pre>\${JSON.stringify(data, null, 2)}</pre>\`;
+                        responseDiv.classList.remove('hidden');
+
+                        return { success: true, responseTime };
+                    } else {
+                        throw new Error(\`HTTP \${response.status}\`);
+                    }
+                } catch (error) {
+                    const endTime = performance.now();
+                    const responseTime = Math.round(endTime - startTime);
+                    
+                    // Estado de error
+                    element.className = 'border rounded-lg p-4 api-test-result error';
+                    statusBadge.textContent = '❌ Error';
+                    statusBadge.className = 'status-badge px-3 py-1 rounded-full text-xs font-medium bg-red-200 text-red-700';
+                    timeSpan.textContent = \`\${responseTime}ms\`;
+                    
+                    responseDiv.innerHTML = \`<pre>Error: \${error.message}</pre>\`;
+                    responseDiv.classList.remove('hidden');
+
+                    return { success: false, responseTime };
+                }
+            }
+
+            // Probar todas las APIs
+            async function testAllApis() {
+                const testBtn = document.getElementById('test-all-btn');
+                testBtn.disabled = true;
+                testBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Probando...';
+
+                let successCount = 0;
+                let totalResponseTime = 0;
+
+                for (let i = 0; i < apis.length; i++) {
+                    const result = await testApi(i);
+                    if (result.success) successCount++;
+                    totalResponseTime += result.responseTime;
+                    
+                    // Pequeña pausa entre requests
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                }
+
+                // Actualizar resumen
+                document.getElementById('success-count').textContent = successCount;
+                document.getElementById('error-count').textContent = apis.length - successCount;
+                document.getElementById('avg-response').textContent = Math.round(totalResponseTime / apis.length) + 'ms';
+
+                testBtn.disabled = false;
+                testBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Probar Todas las APIs';
+            }
+
+            // Event listeners
+            document.getElementById('test-all-btn').addEventListener('click', testAllApis);
+
+            // Inicializar página
+            renderApiList();
+        </script>
+    </body>
+    </html>
+  `)
+})
+
 export default app
