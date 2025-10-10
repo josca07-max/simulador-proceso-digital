@@ -34,6 +34,10 @@
   - **Infraestructura**: Cloudflare Pages, Edge Computing
   - **Herramientas**: Wrangler CLI, Vite, PM2, Git
 - **Objetivo del Proyecto**: Digitalizar y automatizar las metodologías de excelencia operacional industrial (Lean Manufacturing, SMED, Six Sigma, 5S) para optimizar procesos manufactureros de FLEXOMED mediante una plataforma web integral.
+- **Repositorio GitHub**: https://github.com/josca07-max/simulador-proceso-digital
+- **Presupuesto Total del Proyecto**: 60,000 USD
+  - **Equipos Informáticos y Software**: 20,000 USD (Hardware especializado, licencias)
+  - **Horas de Trabajo, Formación y Pruebas**: 40,000 USD (Desarrollo, capacitación, testing)
 
 ---
 
@@ -154,10 +158,13 @@ Impacto: Deployment falló 3 veces hasta configurar correctamente para FLEXOMED.
 
 ### Código Fuente:
 
+- **Repositorio GitHub Completo**: https://github.com/josca07-max/simulador-proceso-digital
 - **Frontend Responsivo** (HTML5 + TailwindCSS + Chart.js)
 - **Backend APIs FLEXIA** (Hono + TypeScript + Cloudflare Workers)
 - **Base de Datos Industrial** (Schema 15+ tablas + datos flexografía)
 - **Configuración Deployment** (wrangler.jsonc + ecosystem.config optimizado)
+- **Control de Versiones**: Git con historial completo de desarrollo
+- **Documentación Técnica**: README.md, esquemas SQL, guías de deployment
 
 ### Plataforma en Producción:
 
@@ -176,10 +183,12 @@ El **Simulador de Proceso Digital** desarrollado por **FLEXIA** para **FLEXOMED*
 
 ### Impacto Esperado para FLEXOMED:
 
+- **Inversión Total**: 60,000 USD (20,000 USD equipos + 40,000 USD desarrollo y formación)
 - **Competitividad**: Posicionar a FLEXOMED en estándares world-class manufacturing
 - **ROI Comprobado**: 136% retorno primer año con payback de 5.1 meses
 - **Transferencia Tecnológica**: Capacitación en metodologías industriales avanzadas
 - **Diferenciación**: Plataforma exclusiva desarrollada por FLEXIA
+- **Código Abierto**: Repositorio completo disponible para FLEXOMED en GitHub
 
 ### Próximos Pasos Recomendados para FLEXOMED:
 

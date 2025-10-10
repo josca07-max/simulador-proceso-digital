@@ -7,6 +7,8 @@
 - **Empresa**: Flexográfica del Mediterráneo S.A. (FLEXOMED)
 - **Sistema**: FLEXIA_FLEXOMED - Simulador de Proceso Digital
 - **Código del Proyecto**: SPD-2025-001
+- **Repositorio GitHub**: https://github.com/josca07-max/simulador-proceso-digital
+- **Presupuesto Total**: 60,000 USD (20,000 USD equipos + 40,000 USD desarrollo/formación)
 - **Contacto Técnico**: ia@flexia.com.sv
 - **Equipo de Desarrollo FLEXIA**:
   - **JACM** - Arquitecto de Software y Lead Developer 
@@ -446,9 +448,11 @@ El **Simulador de Proceso Digital** desarrollado por **FLEXIA** para **FLEXOMED*
 - **Recomendación**: ✅ APROBADO PARA IMPLEMENTACIÓN INDUSTRIAL
 
 ### 10.2 Documentación Entregada
+- ✅ **Repositorio GitHub Completo**: https://github.com/josca07-max/simulador-proceso-digital
 - ✅ **Guía Completa de Usuario** (Rebranding FLEXOMED completo)
 - ✅ **Documentación Técnica APIs** (12+ endpoints)
 - ✅ **Código Fuente Completo** (Frontend + Backend + BD)
+- ✅ **Control de Versiones Git** (Historial completo desarrollo)
 - ✅ **Configuración Deployment** (wrangler.jsonc optimizado)
 - ✅ **Mockups Branding FLEXIA** (incluye híbrido móvil)
 - ✅ **Página Diagnóstico APIs** (solución innovadora)
@@ -460,12 +464,14 @@ El **Simulador de Proceso Digital** desarrollado por **FLEXIA** para **FLEXOMED*
 El **Sistema FLEXIA_FLEXOMED** representa una **solución integral completada exitosamente** para la optimización de procesos industriales en **Flexográfica del Mediterráneo S.A.**, desarrollado por **FLEXIA Soluciones Industriales Avanzadas**.
 
 ### Beneficios Demostrados:
+- ✅ **Inversión Total**: 60,000 USD (20,000 USD equipos + 40,000 USD desarrollo)
 - ✅ **ROI de 136%** en el primer año
 - ✅ **Reducción del 25%** en tiempos de setup (SMED)
 - ✅ **OEE alcanzado 72.6%** con potencial >85%
 - ✅ **Payback de 5.1 meses** comprobado
 - ✅ **100% responsive** y móvil compatible
 - ✅ **Performance excepcional**: 2.1s load, 150ms APIs
+- ✅ **Código Abierto**: Repositorio completo disponible en GitHub
 
 **El sistema está completamente operativo, auditado y listo para implementación industrial en FLEXOMED.**
 
@@ -475,4 +481,6 @@ El **Sistema FLEXIA_FLEXOMED** representa una **solución integral completada ex
 **Cliente: FLEXOMED - Flexográfica del Mediterráneo S.A.**
 **Proyecto: SPD-2025-001 - Sistema FLEXIA_FLEXOMED v2.0**
 **Desarrollado por: JACM (Arquitecto) + CHM (Ing. Industrial)**
+**Repositorio: https://github.com/josca07-max/simulador-proceso-digital**
+**Inversión: 60,000 USD (20K equipos + 40K desarrollo)**
 **Contacto: ia@flexia.com.sv**
