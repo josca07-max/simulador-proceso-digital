@@ -117,7 +117,7 @@ INSERT OR IGNORE INTO five_s_audits (process_id, audit_date, auditor_name, seiri
 
 -- Crear vista para análisis rápido de OEE
 CREATE VIEW IF NOT EXISTS v_oee_current AS
-SELECT 
+SELECT
     p.name as process_name,
     r.name as resource_name,
     o.availability_pct,
@@ -130,3 +130,12 @@ JOIN processes p ON o.process_id = p.id
 JOIN resources r ON o.resource_id = r.id
 WHERE DATE(o.measurement_timestamp) = DATE('now')
 ORDER BY o.measurement_timestamp DESC;
+
+-- =====================
+-- DATOS DE PRUEBA - MÓDULO DE GASTOS DIGITALIZADOS
+-- =====================
+
+INSERT OR IGNORE INTO expense_tickets (ticket_date, establishment_name, concept, amount, vat, pdf_filename, pdf_base64)
+VALUES
+  (date('now', '-2 days'), 'Cafetería Central', 'Reunión con cliente', 18.5, 3.89, 'ticket-demo.pdf', ''),
+  (date('now', '-1 days'), 'Estación Servicio Norte', 'Combustible desplazamiento', 42.0, 8.82, 'ticket-demo2.pdf', '');

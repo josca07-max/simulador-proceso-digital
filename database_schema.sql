@@ -304,7 +304,7 @@ WHERE pc.id IN (
 
 -- Vista de tiempos de setup por familia de producto
 CREATE VIEW IF NOT EXISTS v_setup_matrix AS
-SELECT 
+SELECT
     pf.name as from_product_family,
     pt.name as to_product_family,
     AVG(sc.total_setup_time) as avg_setup_time,
@@ -313,6 +313,22 @@ FROM setup_configurations sc
 JOIN products pf ON sc.from_product_id = pf.id
 JOIN products pt ON sc.to_product_id = pt.id
 GROUP BY pf.product_family, pt.product_family;
+
+-- =====================
+-- MÓDULO 7: GESTIÓN DE GASTOS DIGITALIZADOS
+-- =====================
+
+CREATE TABLE IF NOT EXISTS expense_tickets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ticket_date DATE NOT NULL,
+    establishment_name TEXT NOT NULL,
+    concept TEXT NOT NULL,
+    amount REAL NOT NULL,
+    vat REAL NOT NULL,
+    pdf_filename TEXT NOT NULL,
+    pdf_base64 TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 
 -- =====================
 -- ÍNDICES PARA PERFORMANCE

@@ -9,6 +9,45 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>()
 
+// Helpers para conversión de archivos y sanitización
+const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+  let binary = ''
+  const bytes = new Uint8Array(buffer)
+  const chunkSize = 0x8000
+
+  for (let i = 0; i < bytes.byteLength; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize)
+    binary += String.fromCharCode(...chunk)
+  }
+
+  return btoa(binary)
+}
+
+const base64ToUint8Array = (base64: string) => {
+  const binary = atob(base64)
+  const length = binary.length
+  const bytes = new Uint8Array(length)
+
+  for (let i = 0; i < length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+
+  return bytes
+}
+
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+
+const buildPdfUrl = (request: Request, id: number | string) =>
+  new URL(`/api/expenses/${id}/pdf`, request.url).toString()
+
+const formatNumber = (value: number) => Number.isFinite(value) ? value.toFixed(2) : '0.00'
+
 // ===============================================
 // MIDDLEWARE Y CONFIGURACIÓN
 // ===============================================
@@ -825,6 +864,400 @@ app.get('/diagnostico', (c) => {
     </body>
     </html>
   `)
+})
+
+// ===============================================
+// MÓDULO - GESTIÓN DE GASTOS DIGITALIZADOS
+// ===============================================
+
+app.get('/expenses', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Gestión de Gastos Digitalizados</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="bg-gray-100 min-h-screen">
+      <div class="max-w-5xl mx-auto py-10 px-4 space-y-8">
+        <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">Gestión de Tickets de Gasto</h1>
+            <p class="text-gray-600">Digitaliza tickets PDF, almacena la información clave y exporta un Excel listo para reportar.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <a href="/" class="text-sm text-blue-600 hover:text-blue-800">&larr; Volver al dashboard</a>
+            <a href="/api/expenses/export" class="inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
+              <span class="material-icons">download</span> Descargar Excel
+            </a>
+          </div>
+        </header>
+
+        <section class="bg-white shadow rounded-lg p-6">
+          <h2 class="text-xl font-semibold text-gray-900 mb-4">Registrar un nuevo ticket</h2>
+          <p class="text-sm text-gray-500 mb-6">Completa la información del ticket y adjunta el PDF correspondiente. Todos los campos son obligatorios.</p>
+          <form id="expense-form" class="grid grid-cols-1 md:grid-cols-2 gap-4" enctype="multipart/form-data">
+            <div>
+              <label class="block text-sm font-medium text-gray-700" for="ticket_date">Fecha del ticket</label>
+              <input required type="date" id="ticket_date" name="ticket_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700" for="establishment_name">Establecimiento</label>
+              <input required type="text" id="establishment_name" name="establishment_name" placeholder="Nombre del comercio" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700" for="concept">Concepto</label>
+              <input required type="text" id="concept" name="concept" placeholder="Ej. Almuerzo con cliente" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:col-span-2">
+              <div>
+                <label class="block text-sm font-medium text-gray-700" for="amount">Importe</label>
+                <input required type="number" step="0.01" min="0" id="amount" name="amount" placeholder="0.00" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700" for="vat">IVA</label>
+                <input required type="number" step="0.01" min="0" id="vat" name="vat" placeholder="0.00" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+              </div>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700" for="ticket_pdf">Archivo PDF del ticket</label>
+              <input required type="file" id="ticket_pdf" name="ticket_pdf" accept="application/pdf" class="mt-1 block w-full text-sm text-gray-700" />
+            </div>
+            <div class="md:col-span-2 flex justify-end">
+              <button type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition" id="submit-btn">
+                <span class="material-icons">cloud_upload</span>
+                Guardar ticket
+              </button>
+            </div>
+            <p id="form-message" class="md:col-span-2 text-sm"></p>
+          </form>
+        </section>
+
+        <section class="bg-white shadow rounded-lg p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-xl font-semibold text-gray-900">Historial de tickets</h2>
+              <p class="text-sm text-gray-500">Consulta rápidamente los gastos registrados y accede al PDF original.</p>
+            </div>
+            <button id="refresh-btn" class="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
+              <span class="material-icons">refresh</span>
+              Actualizar listado
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Establecimiento</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concepto</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Importe</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IVA</th>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PDF</th>
+                </tr>
+              </thead>
+              <tbody id="expenses-body" class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">Cargando gastos registrados...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+      <script>
+        const form = document.getElementById('expense-form');
+        const messageEl = document.getElementById('form-message');
+        const tableBody = document.getElementById('expenses-body');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const submitBtn = document.getElementById('submit-btn');
+
+        const formatCurrency = (value) => {
+          if (value === null || value === undefined || isNaN(Number(value))) {
+            return '0.00 €';
+          }
+          return Number(value).toFixed(2) + ' €';
+        };
+
+        async function loadExpenses() {
+          tableBody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">Cargando gastos registrados...</td></tr>';
+          try {
+            const response = await fetch('/api/expenses');
+            const result = await response.json();
+
+            if (!result.success) {
+              throw new Error(result.error || 'No se pudieron obtener los tickets.');
+            }
+
+            const rows = result.data;
+            if (!rows || rows.length === 0) {
+              tableBody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-sm text-gray-500">Aún no hay tickets registrados.</td></tr>';
+              return;
+            }
+
+            tableBody.innerHTML = rows.map((row) => {
+              return '<tr>' +
+                '<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">' + row.ticket_date + '</td>' +
+                '<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">' + row.establishment_name + '</td>' +
+                '<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">' + row.concept + '</td>' +
+                '<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">' + formatCurrency(row.amount) + '</td>' +
+                '<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">' + formatCurrency(row.vat) + '</td>' +
+                '<td class="px-4 py-2 whitespace-nowrap text-sm"><a class="text-blue-600 hover:text-blue-800" target="_blank" rel="noopener" href="' + row.pdf_url + '">Ver PDF</a></td>' +
+              '</tr>';
+            }).join('');
+          } catch (error) {
+            tableBody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-sm text-red-500">' + (error.message || 'Error desconocido') + '</td></tr>';
+          }
+        }
+
+        refreshBtn.addEventListener('click', (event) => {
+          event.preventDefault();
+          loadExpenses();
+        });
+
+        form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          messageEl.textContent = '';
+          messageEl.className = 'md:col-span-2 text-sm text-gray-600';
+          submitBtn.disabled = true;
+          submitBtn.classList.add('opacity-70');
+          submitBtn.innerHTML = '<span class="material-icons">hourglass_top</span> Guardando...';
+
+          try {
+            const formData = new FormData(form);
+            const response = await fetch('/api/expenses', {
+              method: 'POST',
+              body: formData
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+              throw new Error(result.error || 'No se pudo guardar el ticket.');
+            }
+
+            messageEl.textContent = 'Ticket registrado correctamente.';
+            messageEl.className = 'md:col-span-2 text-sm text-green-600';
+            form.reset();
+            await loadExpenses();
+          } catch (error) {
+            messageEl.textContent = error.message || 'Error al registrar el ticket.';
+            messageEl.className = 'md:col-span-2 text-sm text-red-600';
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-70');
+            submitBtn.innerHTML = '<span class="material-icons">cloud_upload</span> Guardar ticket';
+          }
+        });
+
+        loadExpenses();
+      </script>
+    </body>
+    </html>
+  `)
+})
+
+app.get('/api/expenses', async (c) => {
+  try {
+    const { DB } = c.env
+    const results = await DB.prepare(`
+      SELECT id, ticket_date, establishment_name, concept, amount, vat
+      FROM expense_tickets
+      ORDER BY ticket_date DESC, id DESC
+    `).all()
+
+    const expenses = (results.results || []).map((row: any) => ({
+      id: row.id,
+      ticket_date: row.ticket_date,
+      establishment_name: row.establishment_name,
+      concept: row.concept,
+      amount: Number(row.amount),
+      vat: Number(row.vat),
+      pdf_url: buildPdfUrl(c.req.raw, row.id)
+    }))
+
+    return c.json({ success: true, data: expenses })
+  } catch (error) {
+    return c.json({ success: false, error: 'Error al obtener los tickets de gasto' }, 500)
+  }
+})
+
+app.post('/api/expenses', async (c) => {
+  try {
+    const formData = await c.req.formData()
+
+    const ticketDate = formData.get('ticket_date')
+    const establishmentName = formData.get('establishment_name')
+    const concept = formData.get('concept')
+    const amountRaw = formData.get('amount')
+    const vatRaw = formData.get('vat')
+    const pdfFile = formData.get('ticket_pdf')
+
+    if (typeof ticketDate !== 'string' || !ticketDate) {
+      return c.json({ success: false, error: 'La fecha del ticket es obligatoria.' }, 400)
+    }
+
+    if (typeof establishmentName !== 'string' || !establishmentName.trim()) {
+      return c.json({ success: false, error: 'El establecimiento es obligatorio.' }, 400)
+    }
+
+    if (typeof concept !== 'string' || !concept.trim()) {
+      return c.json({ success: false, error: 'El concepto es obligatorio.' }, 400)
+    }
+
+    const amount = parseFloat(typeof amountRaw === 'string' ? amountRaw : '')
+    if (!Number.isFinite(amount) || amount < 0) {
+      return c.json({ success: false, error: 'El importe debe ser un número válido.' }, 400)
+    }
+
+    const vat = parseFloat(typeof vatRaw === 'string' ? vatRaw : '')
+    if (!Number.isFinite(vat) || vat < 0) {
+      return c.json({ success: false, error: 'El IVA debe ser un número válido.' }, 400)
+    }
+
+    if (!(pdfFile instanceof File) || pdfFile.size === 0) {
+      return c.json({ success: false, error: 'Se requiere adjuntar un archivo PDF del ticket.' }, 400)
+    }
+
+    if (pdfFile.type && pdfFile.type !== 'application/pdf') {
+      return c.json({ success: false, error: 'El archivo adjunto debe ser un PDF válido.' }, 400)
+    }
+
+    const pdfBuffer = await pdfFile.arrayBuffer()
+    const pdfBase64 = arrayBufferToBase64(pdfBuffer)
+
+    const { DB } = c.env
+    await DB.prepare(`
+      INSERT INTO expense_tickets (ticket_date, establishment_name, concept, amount, vat, pdf_filename, pdf_base64)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `)
+      .bind(ticketDate, establishmentName.trim(), concept.trim(), amount, vat, pdfFile.name || 'ticket.pdf', pdfBase64)
+      .run()
+
+    const newExpense = await DB.prepare(`
+      SELECT id, ticket_date, establishment_name, concept, amount, vat
+      FROM expense_tickets
+      WHERE id = last_insert_rowid()
+    `).first()
+
+    if (!newExpense) {
+      return c.json({ success: true })
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        id: newExpense.id,
+        ticket_date: newExpense.ticket_date,
+        establishment_name: newExpense.establishment_name,
+        concept: newExpense.concept,
+        amount: Number(newExpense.amount),
+        vat: Number(newExpense.vat),
+        pdf_url: buildPdfUrl(c.req.raw, newExpense.id)
+      }
+    })
+  } catch (error) {
+    return c.json({ success: false, error: 'Error al registrar el ticket de gasto' }, 500)
+  }
+})
+
+app.get('/api/expenses/export', async (c) => {
+  try {
+    const { DB } = c.env
+    const results = await DB.prepare(`
+      SELECT id, ticket_date, establishment_name, concept, amount, vat
+      FROM expense_tickets
+      ORDER BY ticket_date DESC, id DESC
+    `).all()
+
+    const records = results.results || []
+
+    const headerRow = `
+      <tr>
+        <th>Fecha</th>
+        <th>Establecimiento</th>
+        <th>Concepto</th>
+        <th>Importe</th>
+        <th>IVA</th>
+        <th>Enlace PDF</th>
+      </tr>
+    `
+
+    const rowsHtml = records
+      .map((row: any) => `
+        <tr>
+          <td>${escapeHtml(row.ticket_date)}</td>
+          <td>${escapeHtml(row.establishment_name)}</td>
+          <td>${escapeHtml(row.concept)}</td>
+          <td>${formatNumber(Number(row.amount))}</td>
+          <td>${formatNumber(Number(row.vat))}</td>
+          <td><a href="${escapeHtml(buildPdfUrl(c.req.raw, row.id))}">Ver PDF</a></td>
+        </tr>
+      `)
+      .join('\n')
+
+    const htmlContent = `<!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8" />
+        </head>
+        <body>
+          <table border="1">
+            <thead>${headerRow}</thead>
+            <tbody>${rowsHtml || '<tr><td colspan="6">Sin datos</td></tr>'}</tbody>
+          </table>
+        </body>
+      </html>`
+
+    return new Response(htmlContent, {
+      headers: {
+        'Content-Type': 'application/vnd.ms-excel; charset=utf-8',
+        'Content-Disposition': 'attachment; filename="tickets_gasto.xls"'
+      }
+    })
+  } catch (error) {
+    return c.json({ success: false, error: 'Error al generar el Excel de gastos' }, 500)
+  }
+})
+
+app.get('/api/expenses/:id/pdf', async (c) => {
+  try {
+    const idParam = c.req.param('id')
+    const expenseId = Number.parseInt(idParam, 10)
+
+    if (!Number.isFinite(expenseId)) {
+      return c.json({ success: false, error: 'Identificador de ticket no válido' }, 400)
+    }
+
+    const { DB } = c.env
+    const expense = await DB.prepare(`
+      SELECT pdf_base64, pdf_filename
+      FROM expense_tickets
+      WHERE id = ?
+    `)
+      .bind(expenseId)
+      .first()
+
+    if (!expense || !expense.pdf_base64) {
+      return c.json({ success: false, error: 'Ticket no encontrado' }, 404)
+    }
+
+    const pdfBytes = base64ToUint8Array(expense.pdf_base64 as string)
+
+    return new Response(pdfBytes, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `inline; filename="${expense.pdf_filename || 'ticket.pdf'}"`
+      }
+    })
+  } catch (error) {
+    return c.json({ success: false, error: 'Error al recuperar el PDF solicitado' }, 500)
+  }
 })
 
 export default app
